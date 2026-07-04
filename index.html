@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MARWIN — Refeitório</title>
+<!-- jsQR (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root{
+  --bg-main:#0d1410; --bg-card:#161f1a; --bg-card-hover:#1c2620; --accent-vibrant:#1f6b34; --accent-soft:#2e8b3f;
+  --fg-text:#eaf3ec; --border-grid:#23362a; --highlight-yellow:#f9a825; --obs-bg:#15301d;
+  --btn-cardapio:#2e7d32; --frase-fg:#7fb88f; --entry-bg:#16201a; --btn-voltar:#1b5e20;
+  --header-grad-start:#0f3d20; --header-grad-end:#155c2c; --icon-bg:#15301d;
+}
+*{box-sizing:border-box;font-family:'Segoe UI', Arial, sans-serif}
+html,body{height:100%;margin:0;background:var(--bg-main);color:var(--fg-text)}
+.header{background:linear-gradient(135deg,var(--header-grad-start),var(--header-grad-end));color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.header .title{font-weight:700;font-size:19px;letter-spacing:.2px}
+.header .subtitle{font-size:12.5px;color:#bfe3c8;margin-top:1px}
+.header .sair{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+.header .sair:hover{background:rgba(255,255,255,.2)}
+
+.btn{display:inline-block;padding:16px 36px;border:0;border-radius:10px;cursor:pointer;font-weight:700;transition:transform .15s ease, opacity .15s ease}
+.btn:hover{transform:translateY(-1px);opacity:.95}
+.primary{background:var(--accent-vibrant);color:#fff;box-shadow:0 4px 14px rgba(31,107,52,.35)}
+.input{padding:14px 16px;border:1px solid var(--border-grid);border-radius:10px;background:var(--entry-bg);width:100%;color:var(--fg-text);font-size:16px}
+.input:focus{outline:none;border-color:var(--accent-soft)}
+
+/* ---------- Tela de acesso (login) ---------- */
+#screenLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{width:100%;max-width:380px;background:var(--bg-card);border:1px solid var(--border-grid);border-radius:20px;padding:40px 32px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,.35)}
+.login-logo{width:84px;height:84px;border-radius:22px;background:linear-gradient(135deg,var(--header-grad-start),var(--header-grad-end));display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 24px rgba(31,107,52,.35)}
+.login-logo svg{width:42px;height:42px;color:#c8f5d6}
+.login-title{font-size:24px;font-weight:800;letter-spacing:.3px;margin-bottom:4px}
+.login-sub{font-size:13.5px;color:var(--frase-fg);margin-bottom:26px;line-height:1.5}
+.login-tag{display:inline-block;background:var(--obs-bg);color:var(--accent-soft);font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:18px}
+.login-field{text-align:left;margin-bottom:14px}
+.login-field label{display:block;font-size:12.5px;color:var(--frase-fg);margin-bottom:6px;font-weight:600}
+.login-error{color:#ff6b6b;font-size:13px;margin-top:10px;min-height:18px;font-weight:600}
+.login-btn{width:100%;margin-top:8px;padding:15px;font-size:15.5px}
+.shake{animation:shake .4s}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+
+/* ---------- Tela do app (scanner) ---------- */
+.page{max-width:1180px;margin:0 auto;padding:24px}
+.scanner-wrap{display:flex;gap:24px;align-items:flex-start}
+.scanner-col{flex:1;min-width:0}
+.topbar{font-size:20px;font-weight:800;margin-bottom:4px}
+
+.scanner-frame{position:relative;border:2px solid var(--accent-soft);border-radius:18px;background:#000;min-height:560px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:24px;margin-top:20px;box-shadow:0 16px 32px rgba(0,0,0,.16),0 0 0 1px rgba(46,139,63,.08) inset;overflow:hidden}
+.scanner-frame::before, .scanner-frame::after, .scanner-frame .corner-tl, .scanner-frame .corner-tr, .scanner-frame .corner-bl, .scanner-frame .corner-br{content:"";position:absolute;width:34px;height:34px;border-color:#fff;pointer-events:none;z-index:2}
+.scanner-frame .corner-tl{top:20px;left:20px;border-top:3px solid #fff;border-left:3px solid #fff;border-radius:6px 0 0 0}
+.scanner-frame .corner-tr{top:20px;right:20px;border-top:3px solid #fff;border-right:3px solid #fff;border-radius:0 6px 0 0}
+.scanner-frame .corner-bl{bottom:20px;left:20px;border-bottom:3px solid #fff;border-left:3px solid #fff;border-radius:0 0 0 6px}
+.scanner-frame .corner-br{bottom:20px;right:20px;border-bottom:3px solid #fff;border-right:3px solid #fff;border-radius:0 0 6px 0}
+.scanner-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;opacity:.7;z-index:2;pointer-events:none}
+.scanner-crosshair::before, .scanner-crosshair::after{content:"";position:absolute;background:#fff}
+.scanner-crosshair::before{top:50%;left:0;width:100%;height:1px;transform:translateY(-50%)}
+.scanner-crosshair::after{left:50%;top:0;height:100%;width:1px;transform:translateX(-50%)}
+.scanner-cam-pill{position:relative;z-index:2;display:inline-flex;align-items:center;gap:8px;background:rgba(13,20,16,.75);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2);color:#eaf3ec;padding:9px 18px;border-radius:24px;font-size:14px;font-weight:600;margin-top:auto;margin-bottom:210px}
+.scanner-cam-pill svg{width:16px;height:16px}
+.scanner-status-card{position:relative;z-index:2;width:100%;max-width:780px;background:rgba(21,48,29,.92);backdrop-filter:blur(6px);border-radius:14px;padding:24px 24px;text-align:center}
+.scanner-status-card .scanner-icon-wrap{width:64px;height:64px;border-radius:50%;border:2px dashed var(--accent-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;position:relative;animation:pulse 1.8s infinite;background:rgba(21,48,29,.6)}
+.scanner-status-card .scanner-icon-wrap svg{width:28px;height:28px;color:var(--accent-soft)}
+.scanner-status-card .scanner-icon-wrap span{font-size:26px;line-height:1}
+.scanner-status-main{font-size:17px;font-weight:700;color:#fff}
+.scanner-status-sub{font-size:13px;color:#bfe3c8;margin-top:2px;min-height:18px}
+
+/* Overlay de ativação da câmera (aparece antes de a câmera ligar) */
+#cameraGate{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;background:radial-gradient(circle at 50% 40%, #16241a 0%, #0a0f0b 100%)}
+#cameraGate .gate-icon{width:76px;height:76px;border-radius:50%;background:var(--obs-bg);display:flex;align-items:center;justify-content:center}
+#cameraGate .gate-icon svg{width:34px;height:34px;color:var(--accent-soft)}
+#cameraGate .gate-title{font-size:17px;font-weight:700;color:#fff}
+#cameraGate .gate-sub{font-size:13.5px;color:var(--frase-fg);max-width:360px;line-height:1.5}
+#cameraGate .gate-error{font-size:13px;color:#ff8a8a;font-weight:600;max-width:360px;line-height:1.5;display:none}
+
+.scanner-side{display:flex;flex-direction:column;gap:14px;width:340px;flex-shrink:0}
+.scanner-side-card{background:var(--bg-card);border:1px solid var(--border-grid);border-radius:14px;padding:16px 18px;box-shadow:0 16px 32px rgba(0,0,0,.16)}
+.scanner-side-card.row{display:flex;align-items:center;justify-content:space-between}
+.scanner-side-card .label-row{display:flex;align-items:center;gap:10px;color:var(--fg-text);font-size:14px;font-weight:600}
+.scanner-side-card .label-row svg{width:18px;height:18px;color:var(--frase-fg);flex-shrink:0}
+.scanner-side-dot{width:9px;height:9px;border-radius:50%;background:#4caf50;box-shadow:0 0 0 3px rgba(76,175,80,.18);flex-shrink:0}
+.scanner-side-title{font-size:14px;color:var(--fg-text);font-weight:600;margin-bottom:8px}
+.scanner-side-title.upper{font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--frase-fg);font-weight:700}
+.scanner-big-num{font-size:34px;font-weight:800;color:var(--accent-soft);display:flex;align-items:center;justify-content:space-between}
+.scanner-big-num svg{width:34px;height:34px;color:var(--border-grid)}
+.scanner-mode-row{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:var(--fg-text)}
+.scanner-mode-row svg{width:20px;height:20px;color:var(--accent-soft)}
+#ref-list:empty::before{content:"Nenhum registro ainda.";color:var(--frase-fg);font-size:13.5px}
+
+@keyframes pulse{0%{opacity:1}50%{opacity:.6}100%{opacity:1}}
+
+@media(max-width:980px){
+  .scanner-wrap{flex-direction:column}
+  .scanner-side{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TELA DE ACESSO (SENHA) ================= -->
+<div id="screenLogin">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <div class="login-tag">Acesso restrito</div>
+    <div class="login-title">MARWIN</div>
+    <div class="login-sub">Área exclusiva dos <strong>Alunos Educadores</strong>.<br/>Informe a senha de acesso para continuar.</div>
+    <div class="login-field">
+      <label for="senhaAcesso">Senha</label>
+      <input id="senhaAcesso" class="input" type="password" placeholder="••••••••" autocomplete="off" />
+    </div>
+    <button class="btn primary login-btn" onclick="tentarEntrar()">ENTRAR</button>
+    <div class="login-error" id="loginErro"></div>
+  </div>
+</div>
+
+<!-- ================= TELA DO APP (SCANNER) ================= -->
+<div id="screenApp" style="display:none">
+  <div class="header">
+    <div>
+      <div class="title">🍽️ MARWIN — Refeitório</div>
+      <div class="subtitle">Confirmação de Almoço</div>
+    </div>
+    <button class="sair" onclick="sair()">Sair</button>
+  </div>
+
+  <div class="page">
+    <div class="scanner-wrap">
+      <div class="scanner-col">
+        <div class="scanner-frame">
+          <span class="corner-tl"></span><span class="corner-tr"></span><span class="corner-bl"></span><span class="corner-br"></span>
+          <video id="video" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
+          <canvas id="canvas" style="display:none"></canvas>
+          <div class="scanner-crosshair"></div>
+
+          <div id="cameraGate">
+            <div class="gate-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            </div>
+            <div class="gate-title">Ativar a câmera traseira</div>
+            <div class="gate-sub">Este app só funciona com a câmera. Toque no botão abaixo e permita o acesso quando o navegador perguntar.</div>
+            <div class="gate-error" id="gateError"></div>
+            <button class="btn primary" id="btnAtivarCamera" onclick="startCamera()">📷 ATIVAR CÂMERA</button>
+          </div>
+
+          <div class="scanner-cam-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            <span id="camStatus">Aguardando câmera traseira</span>
+          </div>
+          <div class="scanner-status-card" id="cardNome">
+            <div class="scanner-icon-wrap"><span id="cardIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"></path><path d="M6 22h12"></path><path d="M6 2c0 5 4 6.5 6 8 2-1.5 6-3 6-8"></path><path d="M6 22c0-5 4-6.5 6-8 2 1.5 6 3 6 8"></path></svg></span></div>
+            <div id="cardMain" class="scanner-status-main">Aguardando leitura do QR...</div>
+            <div id="cardSub" class="scanner-status-sub"></div>
+            <div style="margin-top:14px;display:flex;gap:10px;justify-content:center">
+              <button id="btnVai" class="btn" style="background:#2e7d32;color:white;display:none" onclick="registrarRef('almoco')">✔ VAI ALMOÇAR</button>
+              <button id="btnNao" class="btn" style="background:#c62828;color:white;display:none" onclick="registrarRef('nao_almoco')">✘ NÃO VAI</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scanner-side">
+        <div class="scanner-side-card row">
+          <div class="label-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="6" rx="1"></rect><rect x="2" y="15" width="20" height="6" rx="1"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line></svg><span id="serverStatus">Servidor: aguardando</span></div>
+          <span class="scanner-side-dot"></span>
+        </div>
+        <div class="scanner-side-card">
+          <div class="scanner-side-title">Presentes Hoje</div>
+          <div class="scanner-big-num"><span id="presentes">0</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"></circle><circle cx="17" cy="6" r="2.5"></circle><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"></path><path d="M16.5 12a4 4 0 0 1 4 4v1"></path></svg></div>
+        </div>
+        <div class="scanner-side-card">
+          <div class="scanner-side-title">Refeições Confirmadas</div>
+          <div class="scanner-big-num"><span id="refConfirmadas">0</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3Zm0 0v7"></path><path d="M7 2c-1.5 0-3 1.5-3 4v4c0 1.5 1 3 3 3"></path><path d="M3 2v6"></path><path d="M11 2v6"></path></svg></div>
+        </div>
+        <div class="scanner-side-card">
+          <div class="scanner-side-title upper">Modo de Leitura</div>
+          <div class="scanner-mode-row" id="modoLeitura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"></path><circle cx="12" cy="13" r="4"></circle></svg><span>Câmera traseira</span></div>
+        </div>
+        <div class="scanner-side-card">
+          <div class="scanner-side-title upper">Últimos Registros</div>
+          <div id="ref-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= ACESSO (SENHA) =================
+// Troque a senha abaixo para a que os alunos educadores devem usar.
+// Atenção: como este é um arquivo estático (sem servidor de autenticação),
+// essa senha fica visível para quem inspecionar o código-fonte da página.
+// Serve como uma trava simples de acesso, não como segurança forte.
+const SENHA_ACESSO = "educador2026";
+
+function tentarEntrar(){
+  const campo = document.getElementById('senhaAcesso');
+  const valor = campo.value.trim();
+  if(valor === SENHA_ACESSO){
+    sessionStorage.setItem('marwin_ref_autenticado', '1');
+    liberarAcesso();
+  }else{
+    const erro = document.getElementById('loginErro');
+    erro.textContent = 'Senha incorreta. Tente novamente.';
+    const card = document.querySelector('.login-card');
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    campo.value = ''; campo.focus();
+  }
+}
+document.getElementById('senhaAcesso').addEventListener('keydown', (e)=>{ if(e.key==='Enter') tentarEntrar(); });
+
+function liberarAcesso(){
+  document.getElementById('screenLogin').style.display = 'none';
+  document.getElementById('screenApp').style.display = 'block';
+  loadRefStats();
+  verificarApi();
+}
+function sair(){
+  sessionStorage.removeItem('marwin_ref_autenticado');
+  stopCamera();
+  document.getElementById('cameraGate').style.display = 'flex';
+  document.getElementById('gateError').style.display = 'none';
+  const btn = document.getElementById('btnAtivarCamera'); btn.textContent = '📷 ATIVAR CÂMERA'; btn.disabled = false;
+  document.getElementById('screenApp').style.display = 'none';
+  document.getElementById('screenLogin').style.display = 'flex';
+  document.getElementById('senhaAcesso').value = '';
+  document.getElementById('loginErro').textContent = '';
+}
+// Mantém o acesso liberado enquanto durar a aba/sessão do navegador.
+if(sessionStorage.getItem('marwin_ref_autenticado') === '1'){
+  liberarAcesso();
+}
+
+// ================= Configuração da API =================
+// Aponta para API na nuvem (ApiNuvem.py). Pode ser sobrescrita com ?api=URL (fica salva no navegador).
+function resolveServerUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('api');
+  if (fromUrl) {
+    const limpo = fromUrl.replace(/\/$/, '');
+    localStorage.setItem('MARWIN_API_URL', limpo);
+    return limpo;
+  }
+  const stored = localStorage.getItem('MARWIN_API_URL');
+  if (stored) return stored.replace(/\/$/, '');
+  return "https://marwin-api-uuul.onrender.com";
+}
+let SERVER_URL = resolveServerUrl();
+
+// ---------- util API (fetch) ----------
+const TIMEOUT = 10000;
+async function apiGet(route, padrao=null){
+  if(!SERVER_URL){ console.warn('API URL não configurada'); return padrao; }
+  try{
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort(), TIMEOUT);
+    const sep = route.includes('?') ? '&' : '?';
+    const url = SERVER_URL + route + sep + '_=' + Date.now();
+    const r = await fetch(url, {method:'GET', cache:'no-store', signal:ctrl.signal});
+    clearTimeout(id);
+    if(!r.ok) return padrao;
+    return await r.json();
+  }catch(e){ console.warn('GET',route,e); return padrao; }
+}
+async function apiPost(route, data){
+  if(!SERVER_URL){ console.warn('API URL não configurada'); return null; }
+  try{
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort(), TIMEOUT);
+    const r = await fetch(SERVER_URL + route, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal:ctrl.signal});
+    clearTimeout(id);
+    if(!r.ok) return null; return await r.json();
+  }catch(e){ console.warn('POST',route,e); return null; }
+}
+
+// ================= Refeitório (câmera traseira + jsQR) =================
+let video = document.getElementById('video'); let canvas = document.getElementById('canvas'); let ctx = canvas.getContext('2d');
+let scanning = false; let lastScan = null; let pending = null; let stats = {presentes:0, refeicoes:0, ultimos:[]};
+
+// A leitura é feita SOMENTE pela câmera traseira do aparelho.
+// startCamera() só roda quando o aluno toca no botão "ATIVAR CÂMERA" —
+// isso garante que o pedido de permissão aconteça dentro de um clique
+// direto do usuário (alguns navegadores/celulares ignoram o pedido se ele
+// vier de código automático, e a página parece "não fazer nada").
+
+// Alguns "navegadores" embutidos (o navegador interno do WhatsApp,
+// Instagram, Telegram, Facebook etc., ou uma página carregada dentro de um
+// iframe) bloqueiam o pedido de câmera SEM mostrar nenhum aviso — o popup
+// de permissão simplesmente nunca aparece e a chamada fica pendurada para
+// sempre. getUserMediaComTimeout() garante que, se isso acontecer, o
+// usuário recebe uma mensagem em vez de uma tela travada.
+function estaDentroDeIframe(){
+  try{ return window.top !== window.self; }catch(e){ return true; }
+}
+function getUserMediaComTimeout(constraints, ms=8000){
+  return Promise.race([
+    navigator.mediaDevices.getUserMedia(constraints),
+    new Promise((_, reject) => setTimeout(() => reject({ name: 'TimeoutError' }), ms))
+  ]);
+}
+
+async function startCamera(){
+  const gate = document.getElementById('cameraGate');
+  const gateError = document.getElementById('gateError');
+  const btn = document.getElementById('btnAtivarCamera');
+  const camStatus = document.getElementById('camStatus');
+  gateError.style.display = 'none';
+  btn.textContent = 'Solicitando permissão...';
+  btn.disabled = true;
+
+  if(estaDentroDeIframe()){
+    gateError.innerHTML = 'Esta página foi aberta dentro de outro app (WhatsApp, Instagram, Telegram etc.) e por isso o navegador bloqueia a câmera sem avisar. Toque nos "•••" do topo e escolha <strong>"Abrir no navegador"</strong> (Chrome/Safari), depois tente de novo.';
+    gateError.style.display = 'block';
+    btn.textContent = '📷 ATIVAR CÂMERA'; btn.disabled = false;
+    return;
+  }
+  if(!window.isSecureContext){
+    gateError.textContent = 'Esta página precisa ser aberta por HTTPS (ou localhost) para usar a câmera. Verifique o link/URL que você está usando.';
+    gateError.style.display = 'block';
+    btn.textContent = '📷 ATIVAR CÂMERA'; btn.disabled = false;
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    gateError.textContent = 'Este navegador não é compatível com acesso à câmera. Tente usar o Chrome ou Safari atualizados.';
+    gateError.style.display = 'block';
+    btn.textContent = '📷 ATIVAR CÂMERA'; btn.disabled = false;
+    return;
+  }
+
+  let stream = null;
+  let erro = null;
+  try{
+    stream = await getUserMediaComTimeout({ video: { facingMode: { exact: 'environment' } } });
+  }catch(e1){
+    try{
+      stream = await getUserMediaComTimeout({ video: { facingMode: 'environment' } });
+    }catch(e2){
+      erro = e2;
+    }
+  }
+
+  if(!stream){
+    console.warn(erro);
+    let msg = 'Não foi possível acessar a câmera.';
+    if(erro){
+      if(erro.name === 'TimeoutError'){
+        msg = 'O navegador não mostrou a opção de permitir a câmera. Isso costuma acontecer em navegadores embutidos de outros apps. Abra este link direto no Chrome ou Safari (fora do WhatsApp/Instagram/etc.) e tente de novo.';
+      }else if(erro.name === 'NotAllowedError' || erro.name === 'PermissionDeniedError'){
+        msg = 'Permissão negada. Vá nas configurações do navegador/site e permita o acesso à câmera, depois toque em ativar novamente.';
+      }else if(erro.name === 'NotFoundError' || erro.name === 'DevicesNotFoundError'){
+        msg = 'Nenhuma câmera foi encontrada neste aparelho.';
+      }else if(erro.name === 'NotReadableError'){
+        msg = 'A câmera está sendo usada por outro aplicativo. Feche-o e tente novamente.';
+      }else{
+        msg = 'Erro ao acessar a câmera (' + erro.name + '). Toque para tentar novamente.';
+      }
+    }
+    gateError.textContent = msg;
+    gateError.style.display = 'block';
+    btn.textContent = '📷 TENTAR NOVAMENTE'; btn.disabled = false;
+    camStatus.textContent = '⚠️ Câmera indisponível';
+    return;
+  }
+
+  video.srcObject = stream;
+  await video.play();
+  gate.style.display = 'none';
+  camStatus.textContent = '🟢 Câmera traseira ativa — aponte o QR Code';
+  scanning = true;
+  tickScan();
+}
+function stopCamera(){ scanning=false; try{ const s = video.srcObject; if(s){ s.getTracks().forEach(t=>t.stop()); video.srcObject=null }}catch(e){} }
+function tickScan(){ if(!scanning) return; if(video.readyState===video.HAVE_ENOUGH_DATA){ canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video,0,0,canvas.width,canvas.height); const img = ctx.getImageData(0,0,canvas.width,canvas.height); const code = jsQR(img.data, img.width, img.height); if(code && code.data){ processScan(code.data); } }
+  requestAnimationFrame(tickScan);
+}
+
+// Limpa "lixo" que o leitor USB (modo teclado) injeta em acentos quando o
+// layout do leitor não bate com o layout do Windows (gera "^" antes de
+// vogais acentuadas e "Ç" no lugar de ":" — ex: "Jo^ao" ou "nomeÇJoão").
+// Mesma lógica usada no backend (Servidor.py) em _limpar_campo(), replicada
+// aqui para já chegar limpo na tela no momento da leitura/confirmação.
+function limparCampoQR(valor){
+  if(!valor) return valor;
+  let v = String(valor);
+  if(v.includes('^') || v.includes('Ç')){
+    v = v.replace(/\^Ç/g, ':').replace(/\^/g, '').replace(/Ç/g, '');
+  }
+  v = v.replace(/[^a-zA-Z0-9À-ÿ\s.'-]/g, '').trim();
+  return v;
+}
+function limparDadosQR(data){
+  if(!data) return data;
+  if(data.nome != null) data.nome = limparCampoQR(data.nome);
+  if(data.serie != null) data.serie = limparCampoQR(data.serie);
+  if(data.curso != null) data.curso = limparCampoQR(data.curso);
+  if(data.matricula != null) data.matricula = limparCampoQR(data.matricula);
+  return data;
+}
+
+function extractFields(text){ try{ const cleaned = text.replace(/^\^Ç/g, ':').replace(/\^{/g,'{').replace(/\^}/g,'}').replace(/\^/g,''); const j = JSON.parse(cleaned); return j; }catch(e){}
+  const fields = {}; const patterns = ['matricula','nome','serie','curso']; patterns.forEach(k=>{ const re = new RegExp(k+'\s*[:=]?\s*([^,\{\n]+)','i'); const m = text.match(re); if(m) fields[k]= m[1].trim().replace(/["'\n]/g,''); });
+  if(!fields.matricula && text.toLowerCase().includes('nome')){ const m = text.match(/nome\s*[:=]?\s*([^,\{\n]+)/i); if(m) fields.nome = m[1].trim(); }
+  return fields;
+}
+
+function processScan(text){ if(!text || text===lastScan) return; lastScan = text; let data=null; try{ data = JSON.parse(text) }catch(e){ data = extractFields(text) }
+  if(!data) return; data = limparDadosQR(data); if(!data.nome) data.nome = data.matricula||'Desconhecido';
+  if(!data.matricula){ // show simple card
+    showCard({nome:data.nome, serie:data.serie||'', curso:data.curso||''}, false); return;
+  }
+  showCard(data, false);
+}
+function showCard(data, duplicado=false){ pending = data; document.getElementById('cardIcon').textContent = duplicado? '⚠️' : '🎓'; document.getElementById('cardMain').textContent = data.nome; document.getElementById('cardSub').textContent = (data.serie||'') + (data.curso? ' • '+data.curso : ''); document.getElementById('btnVai').style.display = duplicado? 'none':'inline-block'; document.getElementById('btnNao').style.display = duplicado? 'none':'inline-block'; }
+
+async function registrarRef(refeicao){ if(!pending) return; const payload = {matricula: pending.matricula||'', nome: pending.nome||'Desconhecido', serie: pending.serie||'N/A', curso: pending.curso||'N/A', refeicao}; const resp = await apiPost('/refeitorio/registrar', payload); if(resp===null){ document.getElementById('serverStatus').textContent = '✘ Servidor offline'; alert('Não foi possível registrar a refeição'); return }
+  if(resp.status==='ja_registrado'){ document.getElementById('cardIcon').textContent='⚠️'; document.getElementById('cardMain').textContent = resp.nome || pending.nome; document.getElementById('cardSub').textContent = `Já registrado às ${resp.hora || resp.hora_ant || '?'} — hoje: ${resp.total_hoje || ''}`; setTimeout(()=>{ resetCard(); },3000); return }
+  // success
+  document.getElementById('presentes').textContent = resp.total_hoje || 0; document.getElementById('refConfirmadas').textContent = resp.total_refeicao || 0; document.getElementById('cardMain').textContent = resp.nome || pending.nome; stats.ultimos.unshift(`${resp.nome} — ${payload.serie} — ${refeicao==='almoco'?'ALMOÇO':'SEM ALMOÇO'}`); if(stats.ultimos.length>8) stats.ultimos.pop(); refreshRefList(); resetCard(); }
+
+function resetCard(){ pending=null; document.getElementById('cardIcon').textContent='⏳'; document.getElementById('cardMain').textContent='Aguardando leitura do QR...'; document.getElementById('cardSub').textContent=''; document.getElementById('btnVai').style.display='none'; document.getElementById('btnNao').style.display='none'; }
+
+function refreshRefList(){ const el = document.getElementById('ref-list'); el.innerHTML=''; stats.ultimos.slice(0,8).forEach(s=>{ const d = document.createElement('div'); d.textContent=s; d.style.padding='6px 0'; el.appendChild(d) }); }
+
+async function loadRefStats(){
+  document.getElementById('presentes').textContent = stats.presentes; document.getElementById('refConfirmadas').textContent = stats.refeicoes; refreshRefList(); }
+
+async function verificarApi(){
+  const el = document.getElementById('serverStatus');
+  if(!SERVER_URL){
+    el.textContent = '✘ API não configurada';
+    return;
+  }
+  el.textContent = '⏳ Conectando a ' + SERVER_URL + '...';
+  try{
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort(), TIMEOUT);
+    const r = await fetch(SERVER_URL + '/health', {signal: ctrl.signal});
+    clearTimeout(id);
+    el.textContent = r.ok ? '✅ API online' : '✘ API respondeu com erro';
+  }catch(e){
+    el.textContent = '✘ API offline';
+  }
+}
+</script>
+</body>
+</html>
